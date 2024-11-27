@@ -1,0 +1,192 @@
+package com.energy.ui;
+
+import com.energy.sources.*;
+import com.energy.logging.SystemLogger;
+
+import javax.swing.*;
+import java.io.*;
+import java.util.ArrayList;
+import java.util.List;
+import java.awt.*;
+
+public class SmartObjectUI {
+    private List<SmartObject> smartObjects;
+    private EnergySourceUI energySourceUI; // Reference to EnergySourceUI instance
+
+    // Constructor
+    public SmartObjectUI(EnergySourceUI energySourceUI) {
+        this.smartObjects = new ArrayList<>();
+        this.energySourceUI = energySourceUI; // Pass EnergySourceUI instance
+
+        try {
+            loadSmartObjects(); // Load smart objects from file at startup
+        } catch (Exception e) {
+            SystemLogger.logError("Failed to load smart objects: " + e.getMessage());
+        }
+    }
+
+    // GUI-based method for managing smart objects
+    public void showGUI() {
+        JFrame frame = new JFrame("Smart Object Management");
+        frame.setDefaultCloseOperation(JFrame.DISPOSE_ON_CLOSE);
+        frame.setSize(600, 400);
+        frame.setLayout(new GridLayout(3, 2, 10, 10));
+
+        JButton addLightButton = new JButton("Add Smart Light");
+        addLightButton.addActionListener(e -> addSmartLight(frame));
+        frame.add(addLightButton);
+
+        JButton addThermostatButton = new JButton("Add Smart Thermostat");
+        addThermostatButton.addActionListener(e -> addSmartThermostat(frame));
+        frame.add(addThermostatButton);
+
+        JButton listDevicesButton = new JButton("List All Devices");
+        listDevicesButton.addActionListener(e -> listAllDevices(frame));
+        frame.add(listDevicesButton);
+
+        JButton activateButton = new JButton("Activate Devices");
+        activateButton.addActionListener(e -> activateDevices(frame));
+        frame.add(activateButton);
+
+        JButton deactivateButton = new JButton("Deactivate Devices");
+        deactivateButton.addActionListener(e -> deactivateDevices(frame));
+        frame.add(deactivateButton);
+
+        JButton simulateButton = new JButton("Simulate Energy Consumption");
+        simulateButton.addActionListener(e -> simulateEnergyConsumptionGUI(frame));
+        frame.add(simulateButton);
+
+        JButton removeLightButton = new JButton("Remove Smart Light");
+        removeLightButton.addActionListener(e -> removeSmartLight(frame));
+        frame.add(removeLightButton);
+
+        JButton removeThermostatButton = new JButton("Remove Smart Thermostat");
+        removeThermostatButton.addActionListener(e -> removeSmartThermostat(frame));
+        frame.add(removeThermostatButton);
+
+        JButton removeAllSmartObjectsButton = new JButton("Remove All Smart Objects");
+        removeAllSmartObjectsButton.addActionListener(e -> removeAllSmartObjects(frame));
+        frame.add(removeAllSmartObjectsButton);
+
+        frame.setVisible(true);
+    }
+
+    private void addSmartLight(JFrame frame) {
+        try {
+            String name = JOptionPane.showInputDialog(frame, "Enter Smart Light name:");
+            String energyDemandStr = JOptionPane.showInputDialog(frame, "Enter energy demand (kWh):");
+            double energyDemand = Double.parseDouble(energyDemandStr);
+
+            // Retrieve grid connection from EnergySourceUI
+            GridConnection gridConnection = energySourceUI.getGridConnection();
+
+            // Create and add SmartLight
+            SmartLight light = new SmartLight(name, energyDemand, energySourceUI.getBatteries(), gridConnection);
+            smartObjects.add(light);
+            saveSmartObjects();
+
+            JOptionPane.showMessageDialog(frame, "Smart Light added successfully!");
+        } catch (Exception e) {
+            JOptionPane.showMessageDialog(frame, "Failed to add Smart Light: " + e.getMessage());
+        }
+    }
+
+    private void addSmartThermostat(JFrame frame) {
+        try {
+            String name = JOptionPane.showInputDialog(frame, "Enter Smart Thermostat name:");
+            String energyDemandStr = JOptionPane.showInputDialog(frame, "Enter energy demand (kWh):");
+            double energyDemand = Double.parseDouble(energyDemandStr);
+
+            // Retrieve grid connection from EnergySourceUI
+            GridConnection gridConnection = energySourceUI.getGridConnection();
+
+            // Create and add SmartThermostat
+            SmartThermostat thermostat = new SmartThermostat(name, energyDemand, energySourceUI.getBatteries(), gridConnection);
+            smartObjects.add(thermostat);
+            saveSmartObjects();
+
+            JOptionPane.showMessageDialog(frame, "Smart Thermostat added successfully!");
+        } catch (Exception e) {
+            JOptionPane.showMessageDialog(frame, "Failed to add Smart Thermostat: " + e.getMessage());
+        }
+    }
+
+    private void listAllDevices(JFrame frame) {
+        if (smartObjects.isEmpty()) {
+            JOptionPane.showMessageDialog(frame, "No devices available.");
+        } else {
+            StringBuilder deviceList = new StringBuilder();
+            for (SmartObject obj : smartObjects) {
+                deviceList.append("Name: ").append(obj.getName())
+                        .append(", Active: ").append(obj.isActive())
+                        .append(", Energy Demand: ").append(obj.getEnergyDemand()).append(" kWh")
+                        .append("\n");
+            }
+            JOptionPane.showMessageDialog(frame, deviceList.toString());
+        }
+    }
+
+    private void activateDevices(JFrame frame) {
+        smartObjects.forEach(SmartObject::activate);
+        JOptionPane.showMessageDialog(frame, "All devices activated.");
+    }
+
+    private void deactivateDevices(JFrame frame) {
+        smartObjects.forEach(SmartObject::deactivate);
+        JOptionPane.showMessageDialog(frame, "All devices deactivated.");
+    }
+
+    private void simulateEnergyConsumptionGUI(JFrame frame) {
+        try {
+            String hoursStr = JOptionPane.showInputDialog(frame, "Enter hours of simulation:");
+            double hours = Double.parseDouble(hoursStr);
+            StringBuilder results = new StringBuilder();
+
+            for (SmartObject obj : smartObjects) {
+                if (obj.isActive()) {
+                    double consumed = obj.consumeEnergy(hours, energySourceUI.getBatteries());
+                    results.append(obj.getName()).append(": Consumed ").append(consumed).append(" kWh.\n");
+                } else {
+                    results.append(obj.getName()).append(": Inactive.\n");
+                }
+            }
+
+            JOptionPane.showMessageDialog(frame, results.toString());
+        } catch (Exception e) {
+            JOptionPane.showMessageDialog(frame, "Simulation failed: " + e.getMessage());
+        }
+    }
+
+    private void removeSmartLight(JFrame frame) {
+        // Implementation similar to the add methods
+    }
+
+    private void removeSmartThermostat(JFrame frame) {
+        // Implementation similar to the add methods
+    }
+
+    private void removeAllSmartObjects(JFrame frame) {
+        smartObjects.clear();
+        saveSmartObjects();
+        JOptionPane.showMessageDialog(frame, "All Smart Objects have been removed successfully.");
+    }
+
+    private void saveSmartObjects() {
+        try (ObjectOutputStream oos = new ObjectOutputStream(new FileOutputStream("smart_objects.dat"))) {
+            oos.writeObject(smartObjects);
+        } catch (IOException e) {
+            SystemLogger.logError("Failed to save Smart Objects: " + e.getMessage());
+        }
+    }
+
+    @SuppressWarnings("unchecked")
+    private void loadSmartObjects() {
+        try (ObjectInputStream ois = new ObjectInputStream(new FileInputStream("smart_objects.dat"))) {
+            smartObjects = (List<SmartObject>) ois.readObject();
+        } catch (FileNotFoundException e) {
+            SystemLogger.logEvent("No saved devices found. Starting with an empty list.");
+        } catch (Exception e) {
+            SystemLogger.logError("Failed to load Smart Objects: " + e.getMessage());
+        }
+    }
+}
